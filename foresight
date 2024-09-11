@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulação de Patrimônio Acumulado</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Simulação de Patrimônio Acumulado com Aportes Progressivos</h1>
+
+    <!-- Formulário de entrada de dados -->
+    <div>
+        <div class="input-group">
+            <label>Prazo de Investimento (anos):</label>
+            <input type="number" id="prazoAnos" value="20">
+        </div>
+        <div class="input-group">
+            <label>Valor Inicial (R$):</label>
+            <input type="number" id="valorInicial" value="10000">
+        </div>
+        <div class="input-group">
+            <label>Aporte Mensal (R$):</label>
+            <input type="number" id="aporteMensal" value="500">
+        </div>
+        <div class="input-group">
+            <label>Rentabilidade Anual (%):</label>
+            <input type="number" id="rentabilidadeAnual" value="8">
+        </div>
+        <div class="input-group">
+            <label>Aumento Progressivo do Aporte Anual (%):</label>
+            <input type="number" id="aumentoAporte" value="5">
+        </div>
+        <div class="input-group">
+            <label>Travar Incremento após quantos anos? (Deixe em branco para não travar):</label>
+            <input type="number" id="travarIncremento">
+        </div>
+        <button onclick="calcularPatrimonio()">Calcular</button>
+    </div>
+
+    <!-- Canvas para o gráfico -->
+    <canvas id="graficoPatrimonio"></canvas>
+
+    <!-- Exibição dos resultados -->
+    <div id="resultados"></div>
+
+    <!-- Importando Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function calcularPatrimonio() {
+            // Captura os valores do formulário
+            const prazoAnos = parseInt(document.getElementById('prazoAnos').value);
+            const valorInicial = parseFloat(document.getElementById('valorInicial').value);
+            const aporteMensal = parseFloat(document.getElementById('aporteMensal').value);
+            const rentabilidadeAnual = parseFloat(document.getElementById('rentabilidadeAnual').value);
+            const aumentoAporte = parseFloat(document.getElementById('aumentoAporte').value);
+            const travarIncremento = document.getElementById('travarIncremento').value ? parseInt(document.getElementById('travarIncremento').value) : null;
+
+            const meses = prazoAnos * 12;
+            const taxaMensal = Math.pow(1 + rentabilidadeAnual / 100, 1 / 12) - 1;
+            let patrimonio = valorInicial;
+            let aporteAtual = aporteMensal;
+            let patrimonioAcumulado = [];
+            let totalInvestido = valorInicial;
+
+            // Calcula o patrimônio acumulado mês a mês
+            for (let mes = 0; mes < meses; mes++) {
+                patrimonio += aporteAtual;
+                totalInvestido += aporteAtual;
+                patrimonio *= (1 + taxaMensal);
+                patrimonioAcumulado.push(patrimonio);
+
+                // Aumenta o aporte anualmente conforme a porcentagem definida
+                if (aumentoAporte > 0 && (mes + 1) % 12 === 0) {
+                    if (!travarIncremento || (mes + 1) / 12 <= travarIncremento) {
+                        aporteAtual *= (1 + aumentoAporte / 100);
+                    }
+                }
+            }
+
+            // Calcular renda mensal na aposentadoria
+            const rendaMensal = calcularRendaMensalAposentadoria(patrimonioAcumulado[patrimonioAcumulado.length - 1]);
+
+            // Exibe os resultados
+            exibirResultados(patrimonioAcumulado, totalInvestido, rendaMensal);
+            desenharGrafico(patrimonioAcumulado);
+        }
+
+        function calcularRendaMensalAposentadoria(patrimonioFinal, taxaSaqueAnual = 6) {
+            const taxaSaqueMensal = taxaSaqueAnual / 12 / 100;
+            return patrimonioFinal * taxaSaqueMensal;
+        }
+
+        function exibirResultados(patrimonioAcumulado, totalInvestido, rendaMensal) {
+            const resultadosDiv = document.getElementById('resultados');
+            resultadosDiv.innerHTML = `
+                <h2>Resultados:</h2>
+                <p>Patrimônio Acumulado: R$ ${patrimonioAcumulado[patrimonioAcumulado.length - 1].toFixed(2)}</p>
+                <p>Total Investido: R$ ${totalInvestido.toFixed(2)}</p>
+                <p>Renda Mensal Estimada na Aposentadoria: R$ ${rendaMensal.toFixed(2)}</p>
+            `;
+        }
+
+        function desenharGrafico(patrimonioAcumulado) {
+            const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
+            if (window.grafico) window.grafico.destroy(); // Destroi o gráfico anterior se houver
+            window.grafico = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({ length: patrimonioAcumulado.length }, (_, i) => i + 1),
+                    datasets: [{
+                        label: 'Patrimônio Acumulado (R$)',
+                        data: patrimonioAcumulado,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Meses'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Patrimônio (R$)'
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
