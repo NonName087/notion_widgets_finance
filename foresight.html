@@ -100,7 +100,7 @@
             desenharGrafico(patrimonioAcumulado);
         }
 
-        function calcularRendaMensalAposentadoria(patrimonioFinal, taxaSaqueAnual = 6) {
+        function calcularRendaMensalAposentadoria(patrimonioFinal, taxaSaqueAnual = 10) {
             const taxaSaqueMensal = taxaSaqueAnual / 12 / 100;
             return patrimonioFinal * taxaSaqueMensal;
         }
